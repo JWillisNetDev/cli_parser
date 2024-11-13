@@ -4,7 +4,7 @@ use std::{boxed::Box, cmp::Ordering, fs::File, io::BufRead, net::{IpAddr, Ipv4Ad
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum Filter<T> {
     None,
     Any,
@@ -79,23 +79,68 @@ impl<T: PartialOrd> OrdFilterable<T> for Option<T> {
     }
 }
 
-#[derive(Default)]
-struct LogFilter {
-    ip: Filter<IpAddr>,
-    timestamp: Filter<DateTime<FixedOffset>>,
+enum StringFilter<'a> {
+    None,
+    Any,
+    Eq(&'a str),
+    Contains(&'a str),
+    NotContains(&'a str),
 }
 
-impl PartialEq<CombinedLogEntry<'_>> for LogFilter {
+impl Default for StringFilter<'_> {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+
+trait StringFilterable {
+    fn apply_string_filter(&self, filter: &StringFilter) -> bool;
+}
+
+impl StringFilterable for &str {
+    fn apply_string_filter(&self, filter: &StringFilter) -> bool {
+        match filter {
+            StringFilter::None => false,
+            StringFilter::Any => true,
+            StringFilter::Eq(value) => self == value,
+            StringFilter::Contains(value) => self.contains(value),
+            StringFilter::NotContains(value) => !self.contains(value),
+        }
+    }
+}
+
+impl StringFilterable for Option<&str> {
+    fn apply_string_filter(&self, filter: &StringFilter) -> bool {
+        match filter {
+            StringFilter::Any => true,
+            StringFilter::None => self.is_none(),
+            StringFilter::Eq(value) => self.as_ref().map_or(false, |v| &v == &value),
+            StringFilter::Contains(value) => self.as_ref().map_or(false, |v| v.contains(value)),
+            StringFilter::NotContains(value) => self.as_ref().map_or(false, |v| !v.contains(value)),
+        }
+    }
+}
+
+#[derive(Default)]
+struct LogFilter<'a> {
+    ip: Filter<IpAddr>,
+    timestamp: Filter<DateTime<FixedOffset>>,
+    user_agent: StringFilter<'a>,
+}
+
+impl PartialEq<CombinedLogEntry<'_>> for LogFilter<'_> {
     fn eq(&self, other: &CombinedLogEntry) -> bool {
         other.ip.apply_eq_filter(&self.ip)
             && other.timestamp.apply_ord_filter(&self.timestamp)
+            && other.user_agent.apply_string_filter(&self.user_agent)
     }
 }
 
 fn main() -> Result<(), Error> {
     let filter = LogFilter {
         ip: Filter::Any,
-        timestamp: Filter::Gt(DateTime::parse_from_rfc3339("2023-02-12T14:34:05+00:00")?),
+        timestamp: Filter::Any, //Filter::Gt(DateTime::parse_from_rfc3339("2023-02-12T14:34:05+00:00")?),
+        user_agent: StringFilter::Contains("Android"),
     };
 
     let file = File::open("raw/data-1.log")?;
