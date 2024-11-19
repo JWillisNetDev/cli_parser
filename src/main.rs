@@ -151,26 +151,5 @@ fn main() -> Result<(), String> {
         }
     }
 
-    // let filter = LogFilter {
-    //     user_agent: StringFilter::Any,
-    //     ip: EqFilter::Eq(IpAddr::V4(Ipv4Addr::new(193, 105, 7, 171))),
-    //     timestamp: OrdFilter::Any, // OrdFilter::Gt(DateTime::parse_from_rfc3339("2023-02-12T14:34:20+00:00")?),
-    // };
-
-    // let file = File::open("raw/data-1.log")?;
-    // let reader = std::io::BufReader::new(file);
-    // let lines = reader
-    //     .lines()
-    //     .filter(|l| l.as_ref().is_ok_and(|l| !l.is_empty()))
-    //     .map(|l| l.unwrap());
-    // for line in lines {
-    //     let entry = parse(LogType::CombinedLog, &line)?;
-    //     if let LogEntry::CombinedLog(entry) = entry {
-    //         if entry.is_match(&filter) {
-    //             println!("{}", line);
-    //         }
-    //     }
-    // }
-
     Ok(())
 }
