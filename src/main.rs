@@ -26,81 +26,64 @@ enum Commands {
 
 #[derive(Args, Debug)]
 struct FilterArgs {
-    #[arg(short, long)]
-    status_code: Option<String>,
+    #[arg(short, long, num_args = 1..=2)]
+    status_code: Option<Vec<String>>,
     
-    #[arg(short, long)]
-    user_agent: Option<String>,
+    #[arg(short, long, num_args = 1..=2)]
+    user_agent: Option<Vec<String>>,
     
-    #[arg(short, long)]
-    ip: Option<String>,
+    #[arg(short, long, num_args = 1..=2)]
+    ip: Option<Vec<String>>,
 
-    #[arg(short, long)]
-    timestamp: Option<String>,
-}
-
-fn explode_args(value: &str) -> Result<Vec<&str>, String> {
-    let args: Vec<&str> = value.splitn(2, ' ').collect();
-
-    if args.len() != 2 {
-        Err(format!("Invalid filter {}", value))
-    }
-    else {
-        Ok(args)
-    }
+    #[arg(short, long, num_args = 1..=2)]
+    timestamp: Option<Vec<String>>,
 }
 
 fn parse_or_err<T: FromStr>(value: &str) -> Result<T, String> {
     value.parse().map_err(|_| format!("Invalid value for filter: {}", value))
 }
 
-fn parse_string_filter(value: impl AsRef<str>) -> Result<StringFilter, String> {
-    let value = value.as_ref();
-    if value == "none" {
+fn parse_string_filter(args: Vec<String>) -> Result<StringFilter, String> {
+    if args[0] == "none" {
         Ok(StringFilter::None)
     }
     else {
-        let args = explode_args(value)?;
-        match args[0] {
-            "contains" => Ok(StringFilter::Contains(args[1].to_string())),
-            "eq" => Ok(StringFilter::Eq(args[1].to_string())),
-            "starts_with" => Ok(StringFilter::StartsWith(args[1].to_string())),
-            "ends_with" => Ok(StringFilter::EndsWith(args[1].to_string())),
-            _ => Err(format!("Invalid filter {}", value))
+        match args[0].as_str() {
+            "contains" => Ok(StringFilter::Contains(args[1].clone())),
+            "eq" => Ok(StringFilter::Eq(args[1].clone())),
+            "starts_with" => Ok(StringFilter::StartsWith(args[1].clone())),
+            "ends_with" => Ok(StringFilter::EndsWith(args[1].clone())),
+            _ => Err(format!("Invalid filter {}", args[0]))
         }
     }
 }
 
-fn parse_eq_filter<T: PartialEq + FromStr>(value: impl AsRef<str>) -> Result<EqFilter<T>, String> {
-    let value = value.as_ref();
-    if value == "none" {
+fn parse_eq_filter<T: PartialEq + FromStr>(args: Vec<String>) -> Result<EqFilter<T>, String> {
+    if args[0] == "none" {
         Ok(EqFilter::None)
     }
     else {
-        let args = explode_args(value)?;
-        match args[0] {
-            "eq" => Ok(EqFilter::Eq(parse_or_err(args[1])?)),
-            "neq" => Ok(EqFilter::Neq(parse_or_err(args[1])?)),
-            _ => Err(format!("Invalid filter {}", value))
+        match args[0].as_str() {
+            "eq" => Ok(EqFilter::Eq(parse_or_err(args[1].as_str())?)),
+            "neq" => Ok(EqFilter::Neq(parse_or_err(args[1].as_str())?)),
+            _ => Err(format!("Invalid filter {}", args[0]))
         }
     }
 }
 
-fn parse_ord_filter<T: PartialOrd + FromStr>(value: impl AsRef<str>) -> Result<OrdFilter<T>, String> {
-    let value = value.as_ref();
-    if value == "none" {
+fn parse_ord_filter<T: PartialOrd + FromStr>(args: Vec<String>) -> Result<OrdFilter<T>, String> {
+    if args[0] == "none" {
         Ok(OrdFilter::None)
     }
     else {
-        let args = explode_args(value)?;
-        match args[0] {
-            "eq" => Ok(OrdFilter::Eq(parse_or_err(args[1])?)),
-            "neq" => Ok(OrdFilter::Neq(parse_or_err(args[1])?)),
-            "gt" => Ok(OrdFilter::Gt(parse_or_err(args[1])?)),
-            "lt" => Ok(OrdFilter::Lt(parse_or_err(args[1])?)),
-            "gte" => Ok(OrdFilter::Gte(parse_or_err(args[1])?)),
-            "lte" => Ok(OrdFilter::Lte(parse_or_err(args[1])?)),
-            _ => Err(format!("Invalid filter {}", value))
+        match args[0].as_str() {
+            "eq" => Ok(OrdFilter::Eq(parse_or_err(args[1].as_str())?)),
+            "neq" => Ok(OrdFilter::Neq(parse_or_err(args[1].as_str())?)),
+            "gt" => Ok(OrdFilter::Gt(parse_or_err(args[1].as_str())?)),
+            "lt" => Ok(OrdFilter::Lt(parse_or_err(args[1].as_str())?)),
+            "gte" => Ok(OrdFilter::Gte(parse_or_err(args[1].as_str())?)),
+            "lte" => Ok(OrdFilter::Lte(parse_or_err(args[1].as_str())?)),
+            _ => Err(format!("Invalid filter {}", args[0]))
         }
     }
 }
